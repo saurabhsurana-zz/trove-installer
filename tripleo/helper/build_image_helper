@@ -1,0 +1,88 @@
+#!/bin/bash
+
+#
+# Additional functions to help with image building
+#
+
+
+build_images() {
+
+    #image_create ${IMAGE_DIR} ${MYSQL_IMAGE_NAME} mysql
+    #image_create ${IMAGE_DIR} ${RABBITMQ_IMAGE_NAME} rabbitmq-server
+    #image_create ${IMAGE_DIR} ${API_IMAGE_NAME} trove-api
+    #image_create ${IMAGE_DIR} ${TASKMANAGER_IMAGE_NAME} trove-taskmanager
+    #image_create ${IMAGE_DIR} ${CONDUCTOR_IMAGE_NAME} trove-conductor
+
+    image_create_guestagent ${IMAGE_DIR} ${GUEST_IMAGE_NAME}
+}
+
+image_create() {
+    IMAGE_DIR=$1
+    IMAGE_NAME=$2
+    IMAGE_ELEMENTS=$3
+
+    for i in {1..5}
+    do
+        echo "Building attempt ${i} image ${IMAGE_NAME}"
+        sudo su -c ". ${INSTALLER_HOME}/helper/build_image_helper;image_build ${IMAGE_DIR} ${IMAGE_NAME} ${IMAGE_ELEMENTS} ${LOG_DIR}" ubuntu
+        ls -ltrh ${IMAGE_DIR}/
+        if [ -f ${IMAGE_DIR}/${IMAGE_NAME}.qcow2 ]
+        then
+            sleep 5
+            . ${INSTALLER_HOME}/stackrc/stackrc-admin
+            glance image-create --name ${IMAGE_NAME}  --is-public=True --container-format=ovf --disk-format=qcow2 < ${IMAGE_DIR}/${IMAGE_NAME}.qcow2
+            break
+        fi
+    done
+}
+
+image_create_guestagent() {
+    IMAGE_DIR=$1
+    IMAGE_NAME=$2
+    for i in {1..5}
+    do
+        echo "Building attempt ${i} image ${IMAGE_NAME}"
+        sudo su -c ". ${INSTALLER_HOME}/helper/build_image_helper;image_build_guestagent ${IMAGE_DIR} ${IMAGE_NAME} ${INSTALLER_HOME} ${STACK_HOME} ${LOG_DIR}" ubuntu
+        if [ -f ${IMAGE_DIR}/${IMAGE_NAME}.qcow2 ]
+        then
+            sleep 5
+            . ${INSTALLER_HOME}/stackrc/stackrc-admin
+            glance image-create --name ${IMAGE_NAME}  --is-public=True --container-format=ovf --disk-format=qcow2 < ${IMAGE_DIR}/${IMAGE_NAME}.qcow2
+            break
+        fi
+    done
+}
+
+image_build() {
+    echo "Actually building the image, this can take up to 30 minutes"
+
+    IMAGE_DIR=$1
+    IMAGE_NAME=$2
+    IMAGE_ELEMENTS=$3
+    LOG_DIR=$4
+
+    echo ${IMAGE_DIR}
+    echo ${IMAGE_NAME}
+    echo ${IMAGE_ELEMENTS}
+    echo ${LOG_DIR}
+
+    cd /opt/stack
+    export ELEMENTS_PATH=/opt/stack/tripleo-image-elements/elements
+    /opt/stack/diskimage-builder/bin/disk-image-create base vm ubuntu heat-cfntools ${IMAGE_ELEMENTS} -a amd64 -o ${IMAGE_DIR}/${IMAGE_NAME} > ${LOG_DIR}/image-${IMAGE_NAME}.log 2>&1
+    rm -rf ${IMAGE_DIR}/${IMAGE_NAME}.d ${IMAGE_DIR}/${IMAGE_NAME}-manifests
+}
+
+image_build_guestagent() {
+    IMAGE_DIR=$1
+    IMAGE_NAME=$2
+    INSTALLER_HOME=$3
+    STACK_HOME=$4
+    LOG_DIR=$5
+    echo ${INSTALLER_HOME}
+    echo ${STACK_HOME}
+
+    . ${INSTALLER_HOME}/trove-guestimage-env
+    export ELEMENTS_PATH=/opt/stack/tripleo-image-elements/elements:/opt/stack/trove-integration/scripts/files/elements
+    /opt/stack/diskimage-builder/bin/disk-image-create base vm ubuntu heat-cfntools trove-guestagent ubuntu-percona -a amd64 -o ${IMAGE_DIR}/${IMAGE_NAME} > ${LOG_DIR}/image-trove-guestagent-percona.log 2>&1
+    rm -rf ${IMAGE_DIR}/${IMAGE_NAME}.d ${IMAGE_DIR}/${IMAGE_NAME}-manifests
+}

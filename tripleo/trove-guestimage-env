@@ -1,0 +1,23 @@
+#!/bin/bash
+export PATH_DISKIMAGEBUILDER=/opt/stack/diskimage-builder
+export PATH_TRIPLEO_ELEMENTS=/opt/stack/tripleo-image-elements
+export PATH_TROVE=/opt/stack/trove
+export HOST_USERNAME=ubuntu
+export GUEST_USERNAME=ubuntu
+export NETWORK_GATEWAY=10.0.0.1
+export SSH_DIR=/home/ubuntu/.ssh
+export RELEASE=precise
+export DIB_RELEASE=precise
+export DIB_CLOUD_IMAGES=cloud-images.ubuntu.com
+export ESCAPED_PATH_TROVE=
+export GUEST_LOGDIR=/var/log/trove
+export ESCAPED_GUEST_LOGDIR=`echo $GUEST_LOGDIR | sed 's;/;\\\\/;g'`
+export REDSTACK_SCRIPTS=/opt/stack/trove-integration/scripts
+export SERVICE_TYPE="percona"
+export VM_PATH=${IMAGE_DIR}
+export UBUNTU_DISTRO_NAME="precise-percona"
+export HOMEDIR="/home/ubuntu"
+export VM="${IMAGE_DIR}/trove-guest-precise-percona"
+export DISTRO="ubuntu"
+export SERVICE_TYPE="percona"
+export EXTRA_ELEMENTS="trove-guestagent"

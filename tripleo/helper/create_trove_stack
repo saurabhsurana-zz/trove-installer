@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#
+# Additional functions to help with image building
+#
+
+
+create_trove_stack() {
+    . ${INSTALLER_HOME}/stackrc/stackrc-admin
+
+    RABBITMQ_IMAGE_ID=`nova image-list | grep ${RABBITMQ_IMAGE_NAME} | awk '{print $2}'`
+    MYSQL_IMAGE_ID=`nova image-list | grep ${MYSQL_IMAGE_NAME} | awk '{print $2}'`
+    API_IMAGE_ID=`nova image-list | grep ${API_IMAGE_NAME} | awk '{print $2}'`
+    TASKMANAGER_IMAGE_ID=`nova image-list | grep ${TASKMANAGER_IMAGE_NAME} | awk '{print $2}'`
+    CONDUCTOR_IMAGE_ID=`nova image-list | grep ${CONDUCTOR_IMAGE_NAME} | awk '{print $2}'`
+    GUEST_IMAGE_ID=`nova image-list | grep ${GUEST_IMAGE_NAME} | awk '{print $2}'`
+
+    heat stack-create trove-control -f /opt/stack/tripleo-heat-templates/trove-control-plane.yaml -P "MySQL-Image-ID=${MYSQL_IMAGE_ID};RabbitMQ-Image-ID=${RABBITMQ_IMAGE_ID};Trove-API-Image-ID=${API_IMAGE_ID};Trove-TM-Image-ID=${TASKMANAGER_IMAGE_ID};Trove-Conductor-Image-ID=${CONDUCTOR_IMAGE_ID};Trove-GuestAgent-Image-ID=${GUEST_IMAGE_ID}"
+
+}

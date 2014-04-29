@@ -1,0 +1,57 @@
+#!/bin/bash
+
+#
+# Additional functions to help with image building
+#
+
+install_devstack(){
+    echo "Trove-Installer : devstack_helper : Checkout devstack "
+    git clone https://github.com/openstack-dev/devstack.git ${DEVSTACK_HOME}
+
+    echo "Trove-Installer : devstack_helper : Copied localrc"
+    cp ${INSTALLER_HOME}/helper/devstack.localrc ${DEVSTACK_HOME}/localrc
+
+    sudo iptables -t nat -A POSTROUTING -s 10.0.0.0/24 -o eth0 -j MASQUERADE
+    chown -R ubuntu:ubuntu /home/ubuntu/devstack
+
+    echo "Trove-Installer : devstack_helper : installing devstack"
+    cd ${DEVSTACK_HOME}
+    sudo su -c ./stack.sh ubuntu > ${LOG_DIR}/devstack-install.log 2>&1
+}
+
+setup_devstack_env() {
+    mkdir /home/ubuntu/keypair
+    ssh-keygen -t rsa -b 2048 -f /home/ubuntu/keypair/default -N ''
+    nova keypair-add --pub-key /home/ubuntu/keypair/default.pub default
+
+    nova flavor-create eph.rd-smaller 10 1024 10 1 --ephemeral 15
+
+    DBaaS_Tenant_ID=`keystone tenant-create --name dbaas  --description "DBaaS Tenant" | grep id | awk '{print $4}'`
+
+    keystone user-create --name dbaas --tenant ${DBaaS_Tenant_ID} --pass 3de4922d8b6ac5a1aad9
+}
+
+install_pip() {
+    cd  /tmp
+    wget https://raw.github.com/pypa/pip/master/contrib/get-pip.py
+    python /tmp/get-pip.py
+}
+
+setup_devstack_test_env() {
+    cd /opt/stack/trove
+    python setup.py install
+
+}
+
+start_trove_tests() {
+     cd /opt/stack/trove-integration/scripts
+    ./redstack test-init
+    ./redstack int-tests
+}
+
+register_trove_service(){
+    TROVE_SERVICE_ID=`keystone service-create --name trove --type database --description "Trove Service" | grep id | awk '{print $4}'`
+    TROVE_API_IP=`nova list | grep Trove-API | awk '{print $12}' | cut -d '=' -f 2`
+
+    keystone endpoint-create --region RegionOne --service ${TROVE_SERVICE_ID} --publicurl http://${TROVE_API_IP}:8779/v1.0/\$\(tenant_id\)s --adminurl http://${TROVE_API_IP}:8779/v1.0/\$\(tenant_id\)s --internalurl http://${TROVE_API_IP}:8779/v1.0/\$\(tenant_id\)s
+}
