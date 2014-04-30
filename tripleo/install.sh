@@ -36,11 +36,16 @@ sudo apt-get install git curl wget -y
 
 install_pip
 
-install_devstack
-
 . ${INSTALLER_HOME}/stackrc/stackrc-admin
 
-sleep 60
+nova list
+
+if [ $? -ne 0 ]; then
+    install_devstack
+
+    sleep 60
+fi
+
 
 mkdir -p ${IMAGE_DIR}
 chmod 777 ${IMAGE_DIR}
