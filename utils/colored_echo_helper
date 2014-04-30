@@ -1,0 +1,38 @@
+#!/bin/bash
+
+
+function colorFullEcho(){
+    local exp=$1;
+    local color=$2;
+
+    if ! [[ $color =~ '^[0-9]$' ]] ; then
+       case $(echo $color | tr '[:upper:]' '[:lower:]') in
+        black) color=0 ;;
+        red) color=1 ;;
+        green) color=2 ;;
+        yellow) color=3 ;;
+        blue) color=4 ;;
+        magenta) color=5 ;;
+        cyan) color=6 ;;
+        white|*) color=7 ;; # white or invalid color
+       esac
+    fi
+    tput setaf $color;
+    echo $exp;
+    tput sgr0;
+}
+
+function coloredEcho() {
+    exp=$1
+    if [[ "${exp}" =~ FAILED ]] || [[ "${exp}" =~ ERROR ]] || [[ "${exp}" =~ NOT_FOUND ]] ;then
+        color="red"
+    elif [[ "${exp}" =~ COMPLETE ]] || [[ "${exp}" =~ ACTIVE ]] || [[ "${exp}" =~ INSTALL ]] ||
+         [[ "${exp}" =~ AVAILABLE ]] || [[ "${exp}" =~ RUNNING ]]  ;then
+        color="green"
+    else
+        color="while"
+    fi
+
+    colorFullEcho "$exp" "$color"
+
+}

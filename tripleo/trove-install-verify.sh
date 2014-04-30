@@ -136,5 +136,3 @@ coloredEcho ${TROVE_STATUS:-FAILED}
 echo ""
 echo ""
 
-#exit by calling a shell to open for the ssh session
-/bin/bash
