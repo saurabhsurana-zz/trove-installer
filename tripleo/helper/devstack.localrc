@@ -1,4 +1,4 @@
-ENABLED_SERVICES+=,heat,h-api,h-api-cfn,h-api-cw,h-eng
+ENABLED_SERVICES+=,heat,h-api,h-api-cfn,h-api-cw,h-eng,s-proxy,s-object,s-container,s-account
 #ENABLED_SERVICES=g-api,g-reg,key,n-api,n-crt,n-obj,n-cpu,n-net,n-cond,s-proxy,s-account,s-object,s-container,cinder,c-sch,c-api,c-vol,n-sch,n-novnc,n-xvnc,n-cauth,horizon,rabbit,tempest,mysql
 #ENABLED_SERVICES=g-api,g-reg,key,n-api,n-crt,n-obj,n-cpu,n-net,n-cond,s-proxy,s-account,s-object,s-container,cinder,c-sch,c-api,c-vol,n-sch,n-novnc,n-xvnc,n-cauth,horizon
 MYSQL_PASSWORD=e1a2c042c828d3566d0a
