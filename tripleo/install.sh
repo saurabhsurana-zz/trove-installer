@@ -13,6 +13,13 @@ chown -R ubuntu:ubuntu ${LOG_DIR}
 # Log to syslog and a separate file
 exec > >(tee ${LOG_DIR}/trove-installer.log | logger -t dbaas-devstack-box -s 2>/dev/console) 2>&1
 
+cat /etc/ssh/sshd_config | grep ForceCommand
+if [ $? -ne 0 ]; then
+    echo "" >> /etc/ssh/sshd_config
+    echo "ForceCommand \"/home/ubuntu/trove-installer/tripleo/trove-install-verify.sh\"" >> /etc/ssh/sshd_config
+    service ssh restart
+fi
+
 IMAGE_DIR=/opt/stack/trove_images
 INSTALLER_HOME=/home/ubuntu/trove-installer/tripleo
 DEVSTACK_HOME=/home/ubuntu/devstack
@@ -66,4 +73,6 @@ create_trove_stack
 sleep 900
 
 register_trove_service
+
+
 
