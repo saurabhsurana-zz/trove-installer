@@ -7,11 +7,11 @@
 
 build_images() {
 
-    #image_create ${IMAGE_DIR} ${MYSQL_IMAGE_NAME} mysql
-    #image_create ${IMAGE_DIR} ${RABBITMQ_IMAGE_NAME} rabbitmq-server
-    #image_create ${IMAGE_DIR} ${API_IMAGE_NAME} trove-api
-    #image_create ${IMAGE_DIR} ${TASKMANAGER_IMAGE_NAME} trove-taskmanager
-    #image_create ${IMAGE_DIR} ${CONDUCTOR_IMAGE_NAME} trove-conductor
+    image_create ${IMAGE_DIR} ${MYSQL_IMAGE_NAME} mysql
+    image_create ${IMAGE_DIR} ${RABBITMQ_IMAGE_NAME} rabbitmq-server
+    image_create ${IMAGE_DIR} ${API_IMAGE_NAME} trove-api
+    image_create ${IMAGE_DIR} ${TASKMANAGER_IMAGE_NAME} trove-taskmanager
+    image_create ${IMAGE_DIR} ${CONDUCTOR_IMAGE_NAME} trove-conductor
 
     image_create_guestagent ${IMAGE_DIR} ${GUEST_IMAGE_NAME}
 }

@@ -29,6 +29,8 @@ setup_devstack_env() {
     DBaaS_Tenant_ID=`keystone tenant-create --name dbaas  --description "DBaaS Tenant" | grep id | awk '{print $4}'`
 
     keystone user-create --name dbaas --tenant ${DBaaS_Tenant_ID} --pass 3de4922d8b6ac5a1aad9
+
+    sudo su -c "ssh-keygen -t rsa -b 2048 -f /home/ubuntu/.ssh/id_rsa -N ''" ubuntu
 }
 
 install_pip() {

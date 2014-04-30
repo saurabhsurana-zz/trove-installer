@@ -40,20 +40,21 @@ install_devstack
 
 . ${INSTALLER_HOME}/stackrc/stackrc-admin
 
-sleep 10
+sleep 60
 
 mkdir -p ${IMAGE_DIR}
 chmod 777 ${IMAGE_DIR}
 chown -R ubuntu:ubuntu ${IMAGE_DIR}
 
 clone_dbaas_git_repos
+
 clone_upstream_git_repos
+
+setup_devstack_env
 
 build_images
 
 upload_images
-
-setup_devstack_env
 
 create_trove_stack
 
