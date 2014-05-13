@@ -1,0 +1,17 @@
+exists_notification_ticks: 30
+trove_admin_role: admin
+trove_guestagent_active_timeout: 900
+trove_mysql_connection: mysql://root:e1a2c042c828d3566d0a@127.0.0.1/trove
+trove_mysql_host: 127.0.0.1
+trove_mysql_password: e1a2c042c828d3566d0a
+trove_mysql_username: root
+trove_nova_admin_password: admin
+trove_nova_admin_tenant_name: admin
+trove_nova_admin_userid: admin
+trove_path: /usr/local/lib/python2.7/dist-packages/trove/
+trove_rabbit_host: 127.0.0.1
+trove_rabbit_hosts: 127.0.0.1
+trove_rabbit_password: f7999d1955c5014aa32c
+trove_rabbit_port: '5672'
+trove_rabbit_use_ssl: 'False'
+trove_rabbit_userid: guest

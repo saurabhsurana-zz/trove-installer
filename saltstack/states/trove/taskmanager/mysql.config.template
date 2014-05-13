@@ -1,0 +1,118 @@
+{% set innodb_buffer_pool_size = {
+    'db.xsmall':  512,
+    'db.small':   1434,
+    'db.medium':  2868,
+    'db.large':   5736,
+    'db.xlarge':  12288,
+    'db.2xlarge': 28672} %}
+{% set innodb_buffer_pool_instances = {
+    'db.xsmall':  1,
+    'db.small':   1,
+    'db.medium':  1,
+    'db.large':   4,
+    'db.xlarge':  4,
+    'db.2xlarge': 8} %}
+{% set innodb_log_file_size = {
+    'db.xsmall':  128,
+    'db.small':   256,
+    'db.medium':  512,
+    'db.large':   512,
+    'db.xlarge':  512,
+    'db.2xlarge': 512} %}
+{% set table_size = {
+    'db.xsmall':  16,
+    'db.small':   64,
+    'db.medium':  128,
+    'db.large':   128,
+    'db.xlarge':  128,
+    'db.2xlarge': 128} %}
+{% set connection_size = {
+    'db.xsmall':  300,
+    'db.small':   500,
+    'db.medium':  1024,
+    'db.large':   1024,
+    'db.xlarge':  4096,
+    'db.2xlarge': 4096} %}
+[client]
+port                            = 3306
+socket                          = /var/run/mysqld/mysqld.sock
+
+[mysqld_safe]
+socket                          = /var/run/mysqld/mysqld.sock
+nice                            = 0
+syslog
+
+[mysqld]
+user                            = mysql
+datadir                         = /var/lib/mysql
+
+# percona extension: no arg disables load data infile, select into outfile
+secure_file_priv
+default_storage_engine          = InnoDB
+enforce_storage_engine          = InnoDB
+log_warnings                    = 2
+userstat                        = 1
+
+log_err                         = /var/log/mysql/err.log
+
+key_buffer                      = 16M
+max_allowed_packet              = 64M
+thread_stack                    = 256K
+thread_cache_size               = 1024
+myisam-recover                  = BACKUP
+max_connections                 = {{ connection_size[flavor['name']] }}
+wait_timeout                    = 300
+skip_name_resolve
+
+query_cache_type                = 0
+query_cache_size                = 0
+
+table_definition_cache          = 1024
+table_open_cache                = 1024
+
+server_id                       = {{server_id}}
+#log_bin                         = /var/lib/mysql/mysql-bin
+#expire_logs_days                = 3
+#max_binlog_size                 = 100M
+
+default_storage_engine          = InnoDB
+enforce_storage_engine          = InnoDB
+
+innodb_buffer_pool_size         = {{ innodb_buffer_pool_size[flavor['name']] }}M
+
+innodb_buffer_pool_instances    = {{ innodb_buffer_pool_instances[flavor['name']] }}
+innodb_buffer_pool_restore_at_startup  = 1
+innodb_blocking_buffer_pool_restore    = 1
+
+{% if flavor['OS-FLV-EXT-DATA:ephemeral'] and flavor['OS-FLV-EXT-DATA:ephemeral'] != 0 %}
+innodb_data_file_path           = ibdata1:10M:autoextend:max:{{ ((flavor['OS-FLV-EXT-DATA:ephemeral'] * 9) // 10) * 1024 }}M
+{% else %}
+innodb_data_file_path           = ibdata1:10M:autoextend:max:{{ ((flavor['disk'] * 9) // 10) * 1024 }}M
+{% endif %}
+innodb_file_per_table           = 0     # disable until Percona fixes ENOSPC
+innodb_file_format              = Barracuda
+innodb_log_file_size            = {{ innodb_log_file_size[flavor['name']] }}
+
+innodb_flush_log_at_trx_commit  = 0
+innodb_flush_method             = O_DIRECT
+innodb_log_buffer_size          = 64M
+innodb_open_files               = 1024
+innodb_support_xa               = 0
+innodb_thread_concurrency       = 0
+
+innodb_io_capacity              = 200
+innodb_read_io_threads          = 2
+innodb_write_io_threads         = 1
+
+event_scheduler                 = ON
+
+tmp_table_size                  = {{ table_size[flavor['name']] }}
+max_heap_table_size             = {{ table_size[flavor['name']] }}
+
+lower_case_table_names          = 1
+auto_increment_increment        = 10
+auto_increment_offset           = 1
+binlog_format                   = row
+
+!includedir /etc/mysql/conf.d
+

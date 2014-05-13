@@ -1,0 +1,15 @@
+trove_admin_role: admin
+trove_mysql_connection: mysql://root:e1a2c042c828d3566d0a@127.0.0.1/trove
+trove_mysql_host: 127.0.0.1
+trove_mysql_password: e1a2c042c828d3566d0a
+trove_mysql_username: root
+trove_path: /usr/local/lib/python2.7/dist-packages/trove/
+trove_rabbit_host: 127.0.0.1
+trove_rabbit_hosts: 127.0.0.1
+trove_rabbit_password: f7999d1955c5014aa32c
+trove_rabbit_port: '5672'
+trove_rabbit_use_ssl: false
+trove_rabbit_userid: guest
+trove_default_datastore: mysql
+trove_worker_threads: 1
+enable_trove_api_ssl: false
