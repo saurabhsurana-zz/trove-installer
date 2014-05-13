@@ -17,7 +17,7 @@
 
 
 if [ "$(id -u)" != "0" ]; then
-   echo "Install dbaas-salt-box Log: This script must be run as root" 1>&2
+   echo "Install trove-salt-box Log: This script must be run as root" 1>&2
    exit 1
 fi
 
