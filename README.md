@@ -18,6 +18,5 @@ These contains scripts for installing trove with tripleo.
 This contains scripts for installing trove with salt stack
 * states : SaltStack state configuration scripts
 * pillar : Pillar configuration
-* guest-salt-elements : Disk image builder elements to help build a trove-guestagent
 
 
