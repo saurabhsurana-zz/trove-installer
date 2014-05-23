@@ -45,21 +45,10 @@ install_pip() {
     python /tmp/get-pip.py
 }
 
-setup_devstack_test_env() {
-    cd /opt/stack/trove
-    python setup.py install
-
-}
-
-start_trove_tests() {
-     cd /opt/stack/trove-integration/scripts
-    ./redstack test-init
-    ./redstack int-tests
-}
 
 register_trove_service(){
     TROVE_SERVICE_ID=`keystone service-create --name trove --type database --description "Trove Service" | grep id | awk '{print $4}'`
-    TROVE_API_IP=`nova list | grep Trove-API | awk '{print $12}' | cut -d '=' -f 2`
+    TROVE_API_IP=`nova list | grep -i trove | grep -i api | awk '{print $13}' | cut -d '=' -f 2 | cut -d "," -f 1`
 
     keystone endpoint-create --region RegionOne --service ${TROVE_SERVICE_ID} --publicurl http://${TROVE_API_IP}:8779/v1.0/\$\(tenant_id\)s --adminurl http://${TROVE_API_IP}:8779/v1.0/\$\(tenant_id\)s --internalurl http://${TROVE_API_IP}:8779/v1.0/\$\(tenant_id\)s
 }
