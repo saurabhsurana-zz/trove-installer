@@ -21,7 +21,8 @@ if [ "$(id -u)" != "0" ]; then
    exit 1
 fi
 
-LOG_DIR=/var/log/trove-installer/`date +"%m-%d-%Y-%H-%M-%S"`
+CURRENT_TIME=`date +"%m-%d-%y-%H-%M"`
+LOG_DIR=/var/log/trove-installer/${CURRENT_TIME}
 mkdir -p ${LOG_DIR}
 chmod 777 ${LOG_DIR}
 chown -R ubuntu:ubuntu ${LOG_DIR}
@@ -29,19 +30,24 @@ chown -R ubuntu:ubuntu ${LOG_DIR}
 # Log to syslog and a separate file
 exec > >(tee ${LOG_DIR}/trove-installer.log | logger -t dbaas-devstack-box -s 2>/dev/console) 2>&1
 
-
 IMAGE_DIR=/opt/stack/trove_images
-INSTALLER_HOME=/home/ubuntu/trove-installer/tripleo
+
+if [ -d /home/ubuntu/trove-installer ]; then
+    INSTALLER_HOME=/home/ubuntu/trove-installer/tripleo
+else
+    INSTALLER_HOME=/opt/stack/trove-installer/tripleo
+fi
+
 DEVSTACK_HOME=/home/ubuntu/devstack
 STACK_HOME=/opt/stack
 IMAGE_DIR=/opt/stack/trove_images
 
-RABBITMQ_IMAGE_NAME=trove-rabbitmq
-MYSQL_IMAGE_NAME=trove-mysql
-API_IMAGE_NAME=trove-api
-CONDUCTOR_IMAGE_NAME=trove-conductor
-TASKMANAGER_IMAGE_NAME=trove-taskmanager
-GUEST_IMAGE_NAME=trove-guest
+RABBITMQ_IMAGE_NAME=dbaas_rmq
+MYSQL_IMAGE_NAME=dbaas_mysql
+API_IMAGE_NAME=dbaas_api
+CONDUCTOR_IMAGE_NAME=dbaas_conductor
+TASKMANAGER_IMAGE_NAME=dbaas_tm
+GUEST_IMAGE_NAME=dbaas_guest
 
 . ${INSTALLER_HOME}/helper/build_image_helper
 . ${INSTALLER_HOME}/helper/devstack_helper
