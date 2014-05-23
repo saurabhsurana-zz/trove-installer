@@ -7,13 +7,35 @@
 
 build_images() {
 
-    image_create ${IMAGE_DIR} ${MYSQL_IMAGE_NAME} mysql
-    image_create ${IMAGE_DIR} ${RABBITMQ_IMAGE_NAME} rabbitmq-server
-    image_create ${IMAGE_DIR} ${API_IMAGE_NAME} trove-api
-    image_create ${IMAGE_DIR} ${TASKMANAGER_IMAGE_NAME} trove-taskmanager
-    image_create ${IMAGE_DIR} ${CONDUCTOR_IMAGE_NAME} trove-conductor
+    nova image-list | grep ${MYSQL_IMAGE_NAME}
+    if [ $? -ne 0 ]; then
+        image_create ${IMAGE_DIR} ${MYSQL_IMAGE_NAME} mysql
+    fi
 
-    image_create_guestagent ${IMAGE_DIR} ${GUEST_IMAGE_NAME}
+    nova image-list | grep ${RABBITMQ_IMAGE_NAME}
+    if [ $? -ne 0 ]; then
+        image_create ${IMAGE_DIR} ${RABBITMQ_IMAGE_NAME} rabbitmq-server
+    fi
+
+    nova image-list | grep ${API_IMAGE_NAME}
+    if [ $? -ne 0 ]; then
+        image_create ${IMAGE_DIR} ${API_IMAGE_NAME} trove-api
+    fi
+
+    nova image-list | grep ${TASKMANAGER_IMAGE_NAME}
+    if [ $? -ne 0 ]; then
+        image_create ${IMAGE_DIR} ${TASKMANAGER_IMAGE_NAME} trove-taskmanager
+    fi
+
+    nova image-list | grep ${CONDUCTOR_IMAGE_NAME}
+    if [ $? -ne 0 ]; then
+        image_create ${IMAGE_DIR} ${CONDUCTOR_IMAGE_NAME} trove-conductor
+    fi
+
+    nova image-list | grep ${GUEST_IMAGE_NAME}
+    if [ $? -ne 0 ]; then
+        image_create_guestagent ${IMAGE_DIR} ${GUEST_IMAGE_NAME}
+    fi
 }
 
 image_create() {
@@ -29,8 +51,14 @@ image_create() {
         if [ -f ${IMAGE_DIR}/${IMAGE_NAME}.qcow2 ]
         then
             sleep 5
+            IMAGE_SUFFIX=${CURRENT_TIME}
+            TROVE_REV=`cat ${IMAGE_DIR}/${IMAGE_NAME}-manifests/dib-pip-manifests/dib-pip-manifest-trove  | grep trove== | cut -d "." -f 4`
+            if [ ! -z ${TROVE_REV} ]; then
+                IMAGE_SUFFIX=${TROVE_REV}_${CURRENT_TIME}
+            fi
+
             . ${INSTALLER_HOME}/stackrc/stackrc-admin
-            glance image-create --name ${IMAGE_NAME}  --is-public=True --container-format=ovf --disk-format=qcow2 < ${IMAGE_DIR}/${IMAGE_NAME}.qcow2
+            glance image-create --name ${IMAGE_NAME}_${IMAGE_SUFFIX} --is-public=True --container-format=ovf --disk-format=qcow2 < ${IMAGE_DIR}/${IMAGE_NAME}.qcow2
             break
         fi
     done
@@ -46,8 +74,13 @@ image_create_guestagent() {
         if [ -f ${IMAGE_DIR}/${IMAGE_NAME}.qcow2 ]
         then
             sleep 5
+            IMAGE_SUFFIX=${CURRENT_TIME}
+            TROVE_REV=`cat ${IMAGE_DIR}/${IMAGE_NAME}-manifests/dib-pip-manifests/dib-pip-manifest-trove  | grep trove== | cut -d "." -f 4`
+            if [ ! -z ${TROVE_REV} ]; then
+                IMAGE_SUFFIX=${TROVE_REV}_${CURRENT_TIME}
+            fi
             . ${INSTALLER_HOME}/stackrc/stackrc-admin
-            glance image-create --name ${IMAGE_NAME}  --is-public=True --container-format=ovf --disk-format=qcow2 < ${IMAGE_DIR}/${IMAGE_NAME}.qcow2
+            glance image-create --name ${IMAGE_NAME}_${IMAGE_SUFFIX}  --is-public=True --container-format=ovf --disk-format=qcow2 < ${IMAGE_DIR}/${IMAGE_NAME}.qcow2
             break
         fi
     done
@@ -67,9 +100,8 @@ image_build() {
     echo ${LOG_DIR}
 
     cd /opt/stack
-    export ELEMENTS_PATH=/opt/stack/tripleo-image-elements/elements
+    export ELEMENTS_PATH=/opt/stack/trove-image-elements/elements:/opt/stack/tripleo-image-elements/elements
     /opt/stack/diskimage-builder/bin/disk-image-create base vm ubuntu heat-cfntools ${IMAGE_ELEMENTS} -a amd64 -o ${IMAGE_DIR}/${IMAGE_NAME} > ${LOG_DIR}/image-${IMAGE_NAME}.log 2>&1
-    rm -rf ${IMAGE_DIR}/${IMAGE_NAME}.d ${IMAGE_DIR}/${IMAGE_NAME}-manifests
 }
 
 image_build_guestagent() {
@@ -82,7 +114,6 @@ image_build_guestagent() {
     echo ${STACK_HOME}
 
     . ${INSTALLER_HOME}/trove-guestimage-env
-    export ELEMENTS_PATH=/opt/stack/tripleo-image-elements/elements:/opt/stack/trove-integration/scripts/files/elements
+    export ELEMENTS_PATH=/opt/stack/trove-image-elements/elements:/opt/stack/tripleo-image-elements/elements:/opt/stack/trove-integration/scripts/files/elements
     /opt/stack/diskimage-builder/bin/disk-image-create base vm ubuntu heat-cfntools trove-guestagent ubuntu-percona -a amd64 -o ${IMAGE_DIR}/${IMAGE_NAME} > ${LOG_DIR}/image-trove-guestagent-percona.log 2>&1
-    rm -rf ${IMAGE_DIR}/${IMAGE_NAME}.d ${IMAGE_DIR}/${IMAGE_NAME}-manifests
 }
