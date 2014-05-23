@@ -4,6 +4,7 @@
 # Additional functions to help with image building
 #
 
+HEAT_HOME=${STACK_HOME}/trove-heat-template
 
 create_trove_stack() {
     . ${INSTALLER_HOME}/stackrc/stackrc-admin
@@ -14,7 +15,15 @@ create_trove_stack() {
     TASKMANAGER_IMAGE_ID=`nova image-list | grep ${TASKMANAGER_IMAGE_NAME} | awk '{print $2}'`
     CONDUCTOR_IMAGE_ID=`nova image-list | grep ${CONDUCTOR_IMAGE_NAME} | awk '{print $2}'`
     GUEST_IMAGE_ID=`nova image-list | grep ${GUEST_IMAGE_NAME} | awk '{print $2}'`
+    EXT_NET_ID=`neutron net-list | grep public | awk '{print $2}'`
 
-    heat stack-create trove-control -f /opt/stack/tripleo-heat-templates/trove-control-plane.yaml -P "MySQL-Image-ID=${MYSQL_IMAGE_ID};RabbitMQ-Image-ID=${RABBITMQ_IMAGE_ID};Trove-API-Image-ID=${API_IMAGE_ID};Trove-TM-Image-ID=${TASKMANAGER_IMAGE_ID};Trove-Conductor-Image-ID=${CONDUCTOR_IMAGE_ID};Trove-GuestAgent-Image-ID=${GUEST_IMAGE_ID}"
+    cd ${HEAT_HOME}
+
+    make clean
+
+    make templates/dbaas.yaml
+
+    heat stack-create trove-control -f ${HEAT_HOME}/templates/dbaas.yaml -P "ext_net_id=${EXT_NET_ID};mysql-image-id=${MYSQL_IMAGE_ID};rmq-image-id=${RABBITMQ_IMAGE_ID};trove-api-image-id=${API_IMAGE_ID};trove-guestagent-image-id=${GUEST_IMAGE_ID};trove-tm-image-id=${TASKMANAGER_IMAGE_ID};trove-conductor-image-id=${CONDUCTOR_IMAGE_ID}"
 
 }
+
