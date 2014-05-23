@@ -15,8 +15,8 @@ States directory contains the state configuration for trove services (API, TM, C
 
 ### Building GuestAgent image
 This setup expects two changes to the default trove guest agent image:
-.. 1. salt-minion elements from tripleo image elements repository needs to be included in the image building process (tripleo-image-elements/elements/salt-minion). 
-.. 2. Trove Service needs to be installed in the image (salt states don't install the service). 
+1. salt-minion elements from tripleo image elements repository needs to be included in the image building process (tripleo-image-elements/elements/salt-minion). 
+2. Trove Service needs to be installed in the image (salt states don't install the service). 
 
 
 
