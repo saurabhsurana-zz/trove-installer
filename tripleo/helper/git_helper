@@ -13,17 +13,19 @@ git clone https://github.com/openstack/diskimage-builder
 echo "Trove-Installer : git_helper : Checkout Upstream Trove-Integration"
 git clone https://github.com/openstack/trove-integration
 
+echo "Trove-Installer : git_helper : Checkout DBaaS Tripleo-Image-Elements"
+git clone https://github.com/openstack/tripleo-image-elements
+
 git clone https://github.com/openstack/trove
 
 }
 
 clone_dbaas_git_repos() {
 cd ${STACK_HOME}
-mv tripleo-image-elements tripleo-image-elements-upstream
 
-echo "Trove-Installer : git_helper : Checkout DBaaS Tripleo-Image-Elements"
-git clone https://github.com/saurabhsurana/tripleo-image-elements
+echo "Trove-Installer : git_helper : Checkout DBaaS Trove-Image-Elements"
+git clone https://github.com/saurabhsurana/trove-image-elements
 
 echo "Trove-Installer : git_helper : Checkout DBaaS Tripleo-Heat-Templates"
-git clone https://github.com/saurabhsurana/tripleo-heat-templates
+git clone https://github.com/saurabhsurana/trove-heat-template
 }
