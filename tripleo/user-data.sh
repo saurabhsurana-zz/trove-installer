@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 # Copyright 2014 Hewlett-Packard Development Company, L.P.
 # All Rights Reserved.
 #

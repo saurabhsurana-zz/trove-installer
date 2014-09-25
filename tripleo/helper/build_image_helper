@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 #
 # Additional functions to help with image building
@@ -44,7 +44,7 @@ image_create() {
     IMAGE_NAME=$2
     IMAGE_ELEMENTS=$3
 
-    for i in {1..1}
+    for i in {1..5}
     do
         if [ -f ${DBAAS_IMAGES}/${IMAGE_NAME}.qcow2 ]
         then
@@ -69,7 +69,7 @@ image_create() {
 image_create_guestagent() {
     DBAAS_IMAGES=$1
     IMAGE_NAME=$2
-    for i in {1..1}
+    for i in {1..5}
     do
         if [ -f ${DBAAS_IMAGES}/${IMAGE_NAME}.qcow2 ]
         then

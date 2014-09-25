@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 #
 # Additional functions to help with image building
