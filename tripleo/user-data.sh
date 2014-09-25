@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 # Copyright 2014 Hewlett-Packard Development Company, L.P.
 # All Rights Reserved.
 #
@@ -24,9 +24,9 @@ sudo apt-get install git curl wget -y
 
 
 #checkout trove-installer repo
-cd /home/ubuntu
+cd /home/${HOST_USER}
 git clone https://github.com/saurabhsurana/trove-installer
 
 #installing trove control plane with tripleo stack
-cd /home/ubuntu/trove-installer/tripleo
-sudo ./install.sh
+cd /home/${HOST_USER}/trove-installer/tripleo
+./install.sh

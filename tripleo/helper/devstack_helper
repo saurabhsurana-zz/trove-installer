@@ -1,54 +1,176 @@
-#!/bin/bash
+#!/bin/bash -x
 
 #
 # Additional functions to help with image building
 #
 
-install_devstack(){
-    echo "Trove-Installer : devstack_helper : Checkout devstack "
-    git clone https://github.com/openstack-dev/devstack.git ${DEVSTACK_HOME}
 
-    echo "Trove-Installer : devstack_helper : Copied localrc"
-    cp ${INSTALLER_HOME}/helper/devstack.localrc ${DEVSTACK_HOME}/localrc
+install_devstack(){
+    if [ -z ${INSTALLER_HOME} ]; then
+        echo "Error: INSTALLER_HOME is not set"
+        exit 1
+    fi
+
+    if [ -z ${DEVSTACK_HOME} ]; then
+        echo "Error: DEVSTACK_HOME is not set"
+        exit 1
+    fi
+    pushd ${DEVSTACK_HOME}
+    if [ -d ${DEVSTACK_HOME} ]; then
+        ./unstack.sh
+        sleep 10
+    else
+        echo "Trove-Installer : devstack_helper : Checkout devstack "
+        git clone https://github.com/openstack-dev/devstack.git ${DEVSTACK_HOME}
+
+        echo "Trove-Installer : devstack_helper : Copied localrc"
+        cp ${INSTALLER_HOME}/helper/devstack.localrc ${DEVSTACK_HOME}/localrc
+    fi
 
     sudo iptables -t nat -A POSTROUTING -s 10.0.0.0/24 -o eth0 -j MASQUERADE
-    chown -R ubuntu:ubuntu /home/ubuntu/devstack
-
-    echo "Trove-Installer : devstack_helper : installing devstack"
-    cd ${DEVSTACK_HOME}
-    sudo su -c ./stack.sh ubuntu > ${LOG_DIR}/devstack-install.log 2>&1
+    pushd ${DEVSTACK_HOME}
+    ./stack.sh
+    popd
 }
 
 setup_devstack_env() {
-    if [ ! -f /home/ubuntu/keypair/default ]; then
-        mkdir /home/ubuntu/keypair
-        ssh-keygen -t rsa -b 2048 -f /home/ubuntu/keypair/default -N ''
-        nova keypair-add --pub-key /home/ubuntu/keypair/default.pub default
+    if [ -z ${INSTALLER_HOME} ]; then
+        echo "Error: INSTALLER_HOME is not set"
+        exit 1
     fi
 
-    if [ ! -f /home/ubuntu/.ssh/id_rsa ]; then
-        sudo su -c "ssh-keygen -t rsa -b 2048 -f /home/ubuntu/.ssh/id_rsa -N ''" ubuntu
+    #setting env parameters
+    . ${INSTALLER_HOME}/install_env.sh
+
+    #using admin creds to setup devstack env for dbaas use
+    . ${INSTALLER_HOME}/stackrc/stackrc-admin
+
+    if [ ! -f /home/${HOST_USER}/.ssh/id_rsa ]; then
+        ssh-keygen -t rsa -b 2048 -f /home/${HOST_USER}/.ssh/id_rsa -N ''
     fi
 
-    nova flavor-create eph.rd-smaller 10 1024 10 1 --ephemeral 15
+    #creating dbaas flavors
+    nova flavor-list | grep 'dbaas'
+    if [ $? -ne 0 ]; then
+        nova flavor-create dbaas-stack 50 512 10 1
+        nova flavor-create dbaas-stack-trove 51 512 10 1
+    fi
 
+    #setting the role ids from keystone
+    member=`keystone user-role-list | grep _member_ | awk '{print $2}'`
+    admin_role=`keystone user-role-list | grep admin | awk '{print $2}'`
+    heat_stack_owner_role=`keystone user-role-list | grep heat_stack_owner | awk '{print $2}'`
+
+    #creating dbaas user account
     keystone tenant-list | grep dbaas
     if [ $? -ne 0 ]; then
         DBaaS_Tenant_ID=`keystone tenant-create --name dbaas  --description "DBaaS Tenant" | grep id | awk '{print $4}'`
-        keystone user-create --name dbaas --tenant ${DBaaS_Tenant_ID} --pass 3de4922d8b6ac5a1aad9
+        DBaaS_User_ID=`keystone user-create --name dbaas --tenant ${DBaaS_Tenant_ID} --pass s3cr3t | grep id | awk '{print $4}'`
+        keystone user-role-add --tenant ${DBaaS_Tenant_ID} --user ${DBaaS_User_ID} --role ${member}
+    fi
+
+    #creating dbaas-infra admin account, to be used for setting up dbaas control plane
+    keystone tenant-list | grep dbaas-infra
+    if [ $? -ne 0 ]; then
+        DBaaS_Infra_Tenant_ID=`keystone tenant-create --name dbaas-infra  --description "DBaaS Tenant" | grep id | awk '{print $4}'`
+        DBaaS_Infra_User_ID=`keystone user-create --name dbaas-infra  --tenant ${DBaaS_Infra_Tenant_ID} --pass s3cr3t | grep id | awk '{print $4}'`
+        keystone user-role-add --tenant ${DBaaS_Infra_Tenant_ID} --user ${DBaaS_Infra_User_ID} --role ${member}
+        keystone user-role-add --tenant ${DBaaS_Infra_Tenant_ID} --user ${DBaaS_Infra_User_ID} --role ${admin_role}
+        keystone user-role-add --tenant ${DBaaS_Infra_Tenant_ID} --user ${DBaaS_Infra_User_ID} --role ${heat_stack_owner_role}
+    fi
+
+    #creating dbaas-pool admin account, to be used for setting up dbaas customer pool
+    keystone tenant-list | grep dbaas-pool
+    if [ $? -ne 0 ]; then
+        DBaaS_Pool_Tenant_ID=`keystone tenant-create --name dbaas-pool  --description "DBaaS Tenant" | grep id | awk '{print $4}'`
+        DBaaS_Pool_User_ID=`keystone user-create --name dbaas-pool --tenant ${DBaaS_Pool_Tenant_ID} --pass s3cr3t | grep id | awk '{print $4}'`
+        keystone user-role-add --tenant ${DBaaS_Pool_Tenant_ID} --user ${DBaaS_Pool_User_ID} --role ${member}
+        keystone user-role-add --tenant ${DBaaS_Pool_Tenant_ID} --user ${DBaaS_Pool_User_ID} --role ${admin_role}
+    fi
+
+    . ${INSTALLER_HOME}/stackrc/stackrc-dbaas
+
+    neutron net-list | grep dbaas-private
+    if [ $? -ne 0 ]; then
+        network_id=`neutron net-create dbaas-private | grep ' id ' | awk '{print $4}'`
+        subnet_id=`neutron subnet-create ${network_id} 192.168.0.0/16 | grep ' id ' | awk '{print $4}'`
+        router_id=`neutron router-create dbaas-private | grep ' id ' | awk '{print $4}'`
+        neutron router-interface-add ${router_id} ${subnet_id}
+        ext_network_id=`neutron net-list | grep 'public' | awk '{print $2}'`
+        neutron router-gateway-set ${router_id} ${ext_network_id}
+    fi
+
+    #using dbaas-infra credentials to create a default key to be used for control plane
+    . ${INSTALLER_HOME}/stackrc/stackrc-dbaas-infra
+
+    if [ ! -f /home/${HOST_USER}/keypair/default ]; then
+        sudo mkdir /home/${HOST_USER}/keypair
+        sudo chown -R ${HOST_USER}:${HOST_USER} /home/${HOST_USER}/keypair
+        ssh-keygen -t rsa -b 2048 -f /home/${HOST_USER}/keypair/default -N ''
+    fi
+
+    nova keypair-list | grep default
+    if [ $? -ne 0 ]; then
+        nova keypair-add --pub-key /home/${HOST_USER}/keypair/default.pub default
     fi
 }
 
 install_pip() {
-    cd  /tmp
-    wget https://raw.github.com/pypa/pip/master/contrib/get-pip.py
-    python /tmp/get-pip.py
+    pip --version | grep 'pip 1.5'
+    if [ $? -ne 0 ]; then
+        pushd  /tmp
+        wget https://raw.github.com/pypa/pip/master/contrib/get-pip.py
+        sudo python /tmp/get-pip.py
+        poped
+    fi
+
+    sleep 5
+
+    sudo pip install diskimage_builder
 }
 
 
 register_trove_service(){
-    TROVE_SERVICE_ID=`keystone service-create --name trove --type database --description "Trove Service" | grep id | awk '{print $4}'`
+    #Registering trove service in the keystone so that we can use trove cli for testing
+
+    . ${INSTALLER_HOME}/stackrc/stackrc-dbaas-infra
+
+    for i in {1..60}
+    do
+        heat stack-list | grep trove-control | grep -i ERROR
+        if [ $? -eq 0 ]; then
+            echo "Error: Heat Stack for Trove Control plane is in ERROR state"
+            return
+        fi
+
+        TROVE_API_IP=`nova list | grep -i trove | grep -i api | awk '{print $13}' | cut -d '=' -f 2 | cut -d "," -f 1`
+        if [ ! -z ${TROVE_API_IP} ]; then
+            break
+        fi
+
+        echo "Waiting for API Server"
+        sleep 10
+    done
+
     TROVE_API_IP=`nova list | grep -i trove | grep -i api | awk '{print $13}' | cut -d '=' -f 2 | cut -d "," -f 1`
+
+    if [ -z ${TROVE_API_IP} ]; then
+        echo "ERROR: Trove API IP address not found"
+        return
+    fi
+
+    TROVE_SERVICE_ID=`keystone service-list | grep trove | awk '{print $2}'`
+    EXISTING_ENDPOINT_ID=`keystone endpoint-list | grep 8779 | awk '{print $2}'`
+
+    #if service already exist lets use that or else will create one
+    if [ -z ${TROVE_SERVICE_ID} ]; then
+        TROVE_SERVICE_ID=`keystone service-create --name trove --type database --description "Trove Service" | grep id | awk '{print $4}'`
+    fi
+
+    # if endpoint already exist, we will have to delete it and create a new one
+    if [ ! -z ${EXISTING_ENDPOINT_ID} ]; then
+        keystone endpoint-delete ${EXISTING_ENDPOINT_ID}
+    fi
 
     keystone endpoint-create --region RegionOne --service ${TROVE_SERVICE_ID} --publicurl http://${TROVE_API_IP}:8779/v1.0/\$\(tenant_id\)s --adminurl http://${TROVE_API_IP}:8779/v1.0/\$\(tenant_id\)s --internalurl http://${TROVE_API_IP}:8779/v1.0/\$\(tenant_id\)s
 }

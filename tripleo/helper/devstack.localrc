@@ -1,12 +1,13 @@
-ENABLED_SERVICES+=,heat,h-api,h-api-cfn,h-api-cw,h-eng,s-proxy,s-object,s-container,s-account,neutron,q-svc,q-agt,q-dhcp,q-l3,q-meta
+ENABLED_SERVICES+=,heat,h-api,h-api-cfn,h-api-cw,h-eng,s-proxy,s-object,s-container,s-account,q-svc,q-agt,q-dhcp,q-l3,q-meta
 disable_service n-net
-MYSQL_PASSWORD=e1a2c042c828d3566d0a
-RABBIT_PASSWORD=f7999d1955c5014aa32c
-SERVICE_TOKEN=be19c524ddc92109a224
-ADMIN_PASSWORD=3de4922d8b6ac5a1aad9
-SERVICE_PASSWORD=7de4162d826bc5a11ad9
-SWIFT_HASH=7de4162d826bc5a11ad9
-FLAT_INTERFACE=br100
-SCREEN_LOGDIR=/opt/stack/logs/screen
-LOGFILE=/opt/stack/logs/stack.sh.log
-VERBOSE=True
+MYSQL_PASSWORD=s3cr3t
+RABBIT_PASSWORD=s3cr3t
+SERVICE_TOKEN=s3cr3t
+ADMIN_PASSWORD=s3cr3t
+SERVICE_PASSWORD=s3cr3t
+SWIFT_HASH=s3cr3t
+#SCREEN_LOGDIR=/opt/stack/logs/screen
+#LOGFILE=/opt/stack/logs/stack.sh.log
+NEUTRON_BRANCH=2014.2.b2
+HEAT_BRANCH=2014.2.b2
+NOVA_BRANCH=2014.2.b2

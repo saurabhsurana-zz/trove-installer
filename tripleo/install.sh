@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 # Copyright 2014 Hewlett-Packard Development Company, L.P.
 # All Rights Reserved.
 #
@@ -16,38 +16,24 @@
 #
 
 
-if [ "$(id -u)" != "0" ]; then
-   echo "Install trove-salt-box Log: This script must be run as root" 1>&2
-   exit 1
-fi
+#if [ "$(id -u)" != "0" ]; then
+#   echo "Install trove-salt-box Log: This script must be run as root" 1>&2
+#   exit 1
+#fi
 
 CURRENT_TIME=`date +"%m-%d-%y-%H-%M"`
-LOG_DIR=/var/log/trove-installer/${CURRENT_TIME}
-mkdir -p ${LOG_DIR}
-chmod 777 ${LOG_DIR}
-chown -R ubuntu:ubuntu ${LOG_DIR}
+export LOG_DIR=/var/log/trove-installer/${CURRENT_TIME}
+sudo mkdir -p ${LOG_DIR}
+sudo chmod 777 ${LOG_DIR}
+sudo chown -R ${HOST_USER}:${HOST_USER} ${LOG_DIR}
 
-# Log to syslog and a separate file
-exec > >(tee ${LOG_DIR}/trove-installer.log | logger -t dbaas-devstack-box -s 2>/dev/console) 2>&1
 
-IMAGE_DIR=/opt/stack/trove_images
+export INSTALLER_HOME=$(dirname $(readlink -f $0))
+export IMAGE_DIR=${INSTALLER_HOME}/../../tripleo-image-elements/images
+export DEVSTACK_HOME=${INSTALLER_HOME}/../../devstack
+export STACK_HOME=${INSTALLER_HOME}/../../stack
 
-if [ -d /home/ubuntu/trove-installer ]; then
-    INSTALLER_HOME=/home/ubuntu/trove-installer/tripleo
-else
-    INSTALLER_HOME=/opt/stack/trove-installer/tripleo
-fi
-
-DEVSTACK_HOME=/home/ubuntu/devstack
-STACK_HOME=/opt/stack
-IMAGE_DIR=/opt/stack/trove_images
-
-RABBITMQ_IMAGE_NAME=dbaas_rmq
-MYSQL_IMAGE_NAME=dbaas_mysql
-API_IMAGE_NAME=dbaas_api
-CONDUCTOR_IMAGE_NAME=dbaas_conductor
-TASKMANAGER_IMAGE_NAME=dbaas_tm
-GUEST_IMAGE_NAME=dbaas_guest
+. ${INSTALLER_HOME}/install_env.sh
 
 . ${INSTALLER_HOME}/helper/build_image_helper
 . ${INSTALLER_HOME}/helper/devstack_helper
@@ -70,9 +56,6 @@ if [ $? -ne 0 ]; then
 fi
 
 
-mkdir -p ${IMAGE_DIR}
-chmod 777 ${IMAGE_DIR}
-chown -R ubuntu:ubuntu ${IMAGE_DIR}
 
 clone_dbaas_git_repos
 
@@ -83,8 +66,6 @@ setup_devstack_env
 build_images
 
 create_trove_stack
-
-sleep 900
 
 register_trove_service
 

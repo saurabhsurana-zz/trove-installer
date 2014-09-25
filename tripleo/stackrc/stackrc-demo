@@ -1,5 +1,5 @@
 export OS_IDENTITY_API_VERSION=2.0
-export OS_PASSWORD=3de4922d8b6ac5a1aad9
+export OS_PASSWORD=s3cr3t
 export OS_AUTH_URL=http://127.0.0.1:5000/v2.0
 export OS_USERNAME=demo
 export OS_TENANT_NAME=demo

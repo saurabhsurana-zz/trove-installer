@@ -1,31 +1,42 @@
-#!/bin/bash
+#!/bin/bash -x
 
 #
 # Additional functions to help with image building
 #
 
+sudo mkdir -p ${STACK_HOME}
+
 clone_upstream_git_repos() {
 cd ${STACK_HOME}
 
-echo "Trove-Installer : git_helper : Checkout Upstream DiskImage-Builder"
-git clone https://github.com/openstack/diskimage-builder
+if [ ! -d ${DISK_IMAGE_BUILDER} ]; then
+    echo "Trove-Installer : git_helper : Checkout Upstream DiskImage-Builder"
+    git clone https://github.com/openstack/diskimage-builder ${DISK_IMAGE_BUILDER}
+fi
 
-echo "Trove-Installer : git_helper : Checkout Upstream Trove-Integration"
-git clone https://github.com/openstack/trove-integration
+if [ ! -d ${TROVE_INTEGRATION} ]; then
+    echo "Trove-Installer : git_helper : Checkout Upstream Trove-Integration"
+    git clone https://github.com/openstack/trove-integration ${TROVE_INTEGRATION}
+fi
 
-echo "Trove-Installer : git_helper : Checkout DBaaS Tripleo-Image-Elements"
-git clone https://github.com/openstack/tripleo-image-elements
-
-git clone https://github.com/openstack/trove
+if [ ! -d ${TRIPLEO_IMAGE_ELEMENTS} ]; then
+    echo "Trove-Installer : git_helper : Checkout DBaaS Tripleo-Image-Elements"
+    git clone https://github.com/openstack/tripleo-image-elements ${TRIPLEO_IMAGE_ELEMENTS}
+fi
 
 }
 
 clone_dbaas_git_repos() {
 cd ${STACK_HOME}
 
-echo "Trove-Installer : git_helper : Checkout DBaaS Trove-Image-Elements"
-git clone https://github.com/saurabhsurana/trove-image-elements
+if [ ! -d ${DBAAS_IMAGE_ELEMENTS} ]; then
+    echo "Trove-Installer : git_helper : Checkout DBaaS Trove-Image-Elements"
+    git clone https://github.com/saurabhsurana/trove-image-elements ${DBAAS_IMAGE_ELEMENTS}
+fi
 
-echo "Trove-Installer : git_helper : Checkout DBaaS Tripleo-Heat-Templates"
-git clone https://github.com/saurabhsurana/trove-heat-template
+if [ ! -d ${DBAAS_HEAT_TEMPLATES} ]; then
+    echo "Trove-Installer : git_helper : Checkout DBaaS Tripleo-Heat-Templates"
+    git clone https://github.com/saurabhsurana/trove-heat-template ${DBAAS_HEAT_TEMPLATES}
+fi
+
 }

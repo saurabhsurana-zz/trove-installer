@@ -4,10 +4,16 @@
 # Additional functions to help with image building
 #
 
-HEAT_HOME=${STACK_HOME}/trove-heat-template
-
 create_trove_stack() {
-    . ${INSTALLER_HOME}/stackrc/stackrc-admin
+    if [ -z ${INSTALLER_HOME} ]; then
+        echo "Error: INSTALLER_HOME is not set"
+        exit 1
+    fi
+
+    . ${INSTALLER_HOME}/stackrc/stackrc-dbaas-infra
+
+    #set other variables
+    #. ${INSTALLER_HOME}/install_env.sh
 
     RABBITMQ_IMAGE_ID=`nova image-list | grep ${RABBITMQ_IMAGE_NAME} | awk '{print $2}'`
     MYSQL_IMAGE_ID=`nova image-list | grep ${MYSQL_IMAGE_NAME} | awk '{print $2}'`
@@ -16,14 +22,46 @@ create_trove_stack() {
     CONDUCTOR_IMAGE_ID=`nova image-list | grep ${CONDUCTOR_IMAGE_NAME} | awk '{print $2}'`
     GUEST_IMAGE_ID=`nova image-list | grep ${GUEST_IMAGE_NAME} | awk '{print $2}'`
     EXT_NET_ID=`neutron net-list | grep public | awk '{print $2}'`
+    DBAAS_ADMIN_TENANT_ID=`keystone tenant-list | grep dbaas-infra | awk '{print $2}'`
 
-    cd ${HEAT_HOME}
+    TROVE_AUTH_HOST=`keystone endpoint-list | grep 5000 | awk '{print $6}' | cut -d "/" -f 3 | cut -d ":" -f 1`
+    TROVE_AUTH_URL=`keystone endpoint-list | grep 5000 | awk '{print $6}’`
+    TROVE_COMPUTE_URL=`keystone endpoint-list | grep -v v3 | grep 8774 | awk '{print $6}' | cut -d "$" -f 1`
+    TROVE_CINDER_URL=`keystone endpoint-list | grep -v v2 | grep 8776 | awk '{print $6}' | cut -d "$" -f 1`
+    TROVE_SWIFT_URL=`keystone endpoint-list | grep -v v2 | grep 8080 | awk '{print $6}' | cut -d "$" -f 1`
+    TROVE_NEUTRON_URL=`keystone endpoint-list | grep -v v2 | grep 9696 | awk '{print $6}' | cut -d "$" -f 1`
+
+    cd ${DBAAS_HEAT_TEMPLATES}
 
     make clean
 
     make templates/dbaas.yaml
 
-    heat stack-create trove-control -f ${HEAT_HOME}/templates/dbaas.yaml -P "ext_net_id=${EXT_NET_ID};mysql-image-id=${MYSQL_IMAGE_ID};rmq-image-id=${RABBITMQ_IMAGE_ID};trove-api-image-id=${API_IMAGE_ID};trove-guestagent-image-id=${GUEST_IMAGE_ID};trove-tm-image-id=${TASKMANAGER_IMAGE_ID};trove-conductor-image-id=${CONDUCTOR_IMAGE_ID}"
+    heat stack-list | grep trove-control
+    if [ $? -ne 0 ]; then
+        heat stack-create trove-control -f ${DBAAS_HEAT_TEMPLATES}/templates/dbaas.yaml -P "ext_net_id=${EXT_NET_ID};database0_image=${MYSQL_IMAGE_ID};messaging0-rmq-image-id=${RABBITMQ_IMAGE_ID};trove0-api-image-id=${API_IMAGE_ID};trove-guestagent-image-id=${GUEST_IMAGE_ID};trove0-tm-image-id=${TASKMANAGER_IMAGE_ID};trove0-conductor-image-id=${CONDUCTOR_IMAGE_ID};trove-auth-host=${TROVE_AUTH_HOST};trove-auth-url=${TROVE_AUTH_URL};trove-compute-url=${TROVE_COMPUTE_URL};trove-cinder-url=${TROVE_CINDER_URL};trove-swift-url=${TROVE_SWIFT_URL};trove-neutron-url=${TROVE_NEUTRON_URL};trove-service-tenant-id=${DBAAS_ADMIN_TENANT_ID}"
+    else
+        heat stack-update trove-control -f ${DBAAS_HEAT_TEMPLATES}/templates/dbaas.yaml -P "ext_net_id=${EXT_NET_ID};database0_image=${MYSQL_IMAGE_ID};messaging0-rmq-image-id=${RABBITMQ_IMAGE_ID};trove0-api-image-id=${API_IMAGE_ID};trove-guestagent-image-id=${GUEST_IMAGE_ID};trove0-tm-image-id=${TASKMANAGER_IMAGE_ID};trove0-conductor-image-id=${CONDUCTOR_IMAGE_ID};trove-auth-host=${TROVE_AUTH_HOST};trove-auth-url=${TROVE_AUTH_URL};trove-compute-url=${TROVE_COMPUTE_URL};trove-cinder-url=${TROVE_CINDER_URL};trove-swift-url=${TROVE_SWIFT_URL};trove-neutron-url=${TROVE_NEUTRON_URL};trove-service-tenant-id=${DBAAS_ADMIN_TENANT_ID}"
+    fi
+    sleep 10
+
+    SUBNET_DNS_SET=False
+    for i in {1..5}
+    do
+        SUBNET_ID=`neutron subnet-list | grep trove-control-trove_mgmt | awk '{print $2}'`
+        DNS_IP=`nslookup google.com | grep Server | awk '{print $2}'`
+
+        if [ ! -z ${SUBNET_ID} ]; then
+
+            neutron subnet-show ${SUBNET_ID} | grep dns_nameservers | grep ${DNS_IP}
+
+            if [ $? -ne 0 ]; then
+                neutron subnet-update ${SUBNET_ID} --dns_nameservers list=true $DNS_IP
+            fi
+
+            break
+        fi
+    done
 
 }
 
