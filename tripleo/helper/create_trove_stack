@@ -25,7 +25,7 @@ create_trove_stack() {
     DBAAS_ADMIN_TENANT_ID=`keystone tenant-list | grep dbaas-infra | awk '{print $2}'`
 
     TROVE_AUTH_HOST=`keystone endpoint-list | grep 5000 | awk '{print $6}' | cut -d "/" -f 3 | cut -d ":" -f 1`
-    TROVE_AUTH_URL=`keystone endpoint-list | grep 5000 | awk '{print $6}’`
+    TROVE_AUTH_URL=`keystone endpoint-list | grep 5000 | awk '{print $6}'`
     TROVE_COMPUTE_URL=`keystone endpoint-list | grep -v v3 | grep 8774 | awk '{print $6}' | cut -d "$" -f 1`
     TROVE_CINDER_URL=`keystone endpoint-list | grep -v v2 | grep 8776 | awk '{print $6}' | cut -d "$" -f 1`
     TROVE_SWIFT_URL=`keystone endpoint-list | grep -v v2 | grep 8080 | awk '{print $6}' | cut -d "$" -f 1`
@@ -33,11 +33,11 @@ create_trove_stack() {
 
     cd ${DBAAS_HEAT_TEMPLATES}
 
-    make clean
+    make clean > /dev/null 2>&1
 
-    make templates/dbaas.yaml
-
-    heat stack-list | grep trove-control
+    make templates/dbaas.yaml > /dev/null 2>&1
+    echo "Creating stack"
+    heat stack-list | grep trove-control > /dev/null 2>&1
     if [ $? -ne 0 ]; then
         heat stack-create trove-control -f ${DBAAS_HEAT_TEMPLATES}/templates/dbaas.yaml -P "ext_net_id=${EXT_NET_ID};database0_image=${MYSQL_IMAGE_ID};messaging0-rmq-image-id=${RABBITMQ_IMAGE_ID};trove0-api-image-id=${API_IMAGE_ID};trove-guestagent-image-id=${GUEST_IMAGE_ID};trove0-tm-image-id=${TASKMANAGER_IMAGE_ID};trove0-conductor-image-id=${CONDUCTOR_IMAGE_ID};trove-auth-host=${TROVE_AUTH_HOST};trove-auth-url=${TROVE_AUTH_URL};trove-compute-url=${TROVE_COMPUTE_URL};trove-cinder-url=${TROVE_CINDER_URL};trove-swift-url=${TROVE_SWIFT_URL};trove-neutron-url=${TROVE_NEUTRON_URL};trove-service-tenant-id=${DBAAS_ADMIN_TENANT_ID}"
     else
@@ -53,10 +53,10 @@ create_trove_stack() {
 
         if [ ! -z ${SUBNET_ID} ]; then
 
-            neutron subnet-show ${SUBNET_ID} | grep dns_nameservers | grep ${DNS_IP}
+            neutron subnet-show ${SUBNET_ID} | grep dns_nameservers | grep ${DNS_IP} > /dev/null 2>&1
 
             if [ $? -ne 0 ]; then
-                neutron subnet-update ${SUBNET_ID} --dns_nameservers list=true $DNS_IP
+                neutron subnet-update ${SUBNET_ID} --dns_nameservers list=true $DNS_IP > /dev/null 2>&1
             fi
 
             break

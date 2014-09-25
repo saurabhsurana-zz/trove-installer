@@ -41,21 +41,23 @@ export STACK_HOME=${INSTALLER_HOME}/../../stack
 . ${INSTALLER_HOME}/trove-guestimage-env
 . ${INSTALLER_HOME}/helper/create_trove_stack
 
-sudo apt-get install git curl wget -y
+echo "Installing necessary dependencies"
+sudo apt-get install git curl wget -y > /dev/null 2>&1
 
 install_pip
 
 . ${INSTALLER_HOME}/stackrc/stackrc-admin
 
-nova list
+nova list > /dev/null 2>&1
 
 if [ $? -ne 0 ]; then
+    echo "Installing Devstack"
     install_devstack
 
     sleep 60
 fi
 
-
+echo "Devstack is running"
 
 clone_dbaas_git_repos
 
